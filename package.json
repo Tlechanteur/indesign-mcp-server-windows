@@ -1,7 +1,7 @@
 {
-  "name": "indesign-mcp-server",
-  "version": "1.0.0",
-  "description": "A comprehensive Model Context Protocol (MCP) server for Adobe InDesign automation with 35+ professional tools",
+  "name": "indesign-mcp-server-windows",
+  "version": "1.1.0",
+  "description": "Cross-platform (macOS & Windows) Model Context Protocol (MCP) server for Adobe InDesign automation with 35+ professional tools",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -16,9 +16,14 @@
     "automation",
     "publishing",
     "desktop-publishing",
-    "claude"
+    "claude",
+    "windows",
+    "com"
   ],
   "author": "lucdesign",
+  "contributors": [
+    "Thierry Lechanteur (Windows/COM port)"
+  ],
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.5.0"
@@ -28,10 +33,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lucdesign/indesign-mcp-server.git"
+    "url": "git+https://github.com/Tlechanteur/indesign-mcp-server-windows.git"
   },
   "bugs": {
-    "url": "https://github.com/lucdesign/indesign-mcp-server/issues"
+    "url": "https://github.com/Tlechanteur/indesign-mcp-server-windows/issues"
   },
-  "homepage": "https://github.com/lucdesign/indesign-mcp-server#readme"
+  "homepage": "https://github.com/Tlechanteur/indesign-mcp-server-windows#readme"
 }

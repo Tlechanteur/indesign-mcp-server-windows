@@ -1,6 +1,8 @@
-# InDesign MCP Server
+# InDesign MCP Server — Cross-Platform (macOS & Windows)
 
 A comprehensive **Model Context Protocol (MCP) server** for **Adobe InDesign automation** with **35+ professional tools**. This server enables AI assistants like Claude to directly control Adobe InDesign, automating complex publishing workflows, document creation, and professional layout tasks.
+
+> **Cross-platform fork** of [lucdesign/indesign-mcp-server](https://github.com/lucdesign/indesign-mcp-server) (macOS-only, AppleScript). This fork adds a **native Windows transport** via COM/VBScript (`CreateObject("InDesign.Application")` + `DoScript`) and picks the right transport automatically from `process.platform`. All 36 tools are unchanged — the ExtendScript layer is identical on both platforms. See [WINDOWS.md](WINDOWS.md) for details of the port.
 
 ## 🚀 Features
 
@@ -42,17 +44,21 @@ A comprehensive **Model Context Protocol (MCP) server** for **Adobe InDesign aut
 
 ## 📋 Prerequisites
 
-- **Adobe InDesign 2025** (or compatible version)
-- **macOS** (required for AppleScript integration)
+- **Adobe InDesign** (tested on 2024–2026 releases)
+- **macOS** (AppleScript transport) **or Windows** (COM/VBScript transport — this fork)
 - **Node.js 18+**
-- **MCP-compatible client** (like Claude Desktop)
+- **MCP-compatible client** (Claude Desktop, Claude Code, Cursor…)
+
+### Optional environment variables
+- `INDESIGN_APP_NAME` (macOS) — application name for AppleScript, default `Adobe InDesign 2025`
+- `INDESIGN_PROGID` (Windows) — COM ProgID, default `InDesign.Application` (version-independent; falls back through `InDesign.Application.2026/2025/2024`)
 
 ## 🛠️ Installation
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/lucdesign/indesign-mcp-server.git
-cd indesign-mcp-server
+git clone https://github.com/Tlechanteur/indesign-mcp-server-windows.git
+cd indesign-mcp-server-windows
 ```
 
 ### 2. Install Dependencies
@@ -253,8 +259,9 @@ for (const file of files) {
 ### Common Issues
 
 **"Adobe InDesign not found"**
-- Ensure InDesign 2025 is installed and running
-- Check AppleScript permissions in System Preferences
+- Ensure InDesign is installed and running
+- macOS: check AppleScript permissions in System Preferences
+- Windows: the COM bridge starts InDesign if needed, but launching it first is faster and more reliable. If you run several InDesign versions side by side, set `INDESIGN_PROGID` (e.g. `InDesign.Application.2026`)
 
 **"Script execution failed"**
 - Verify Adobe InDesign is the active application
@@ -289,8 +296,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/lucdesign/indesign-mcp-server/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/lucdesign/indesign-mcp-server/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Tlechanteur/indesign-mcp-server-windows/issues)
+- **Original macOS project**: [lucdesign/indesign-mcp-server](https://github.com/lucdesign/indesign-mcp-server)
 
 ---
 

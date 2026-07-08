@@ -639,20 +639,69 @@ class InDesignMCPServer {
     fs.writeFileSync(tempScript, wrappedScript);
 
     try {
-      const appleScript = `
-        tell application "Adobe InDesign 2025"
-          activate
-          do script POSIX file "${tempScript}" language javascript
-        end tell
-      `;
-      
-      const result = await this.executeAppleScript(appleScript);
-      return result;
+      if (process.platform === 'win32') {
+        return await this.runViaWindowsCOM(tempScript);
+      }
+      return await this.runViaAppleScript(tempScript);
     } finally {
       if (fs.existsSync(tempScript)) {
         fs.unlinkSync(tempScript);
       }
     }
+  }
+
+  // macOS transport: drive InDesign through AppleScript (osascript)
+  async runViaAppleScript(tempScript) {
+    const appName = process.env.INDESIGN_APP_NAME || 'Adobe InDesign 2025';
+    const appleScript = `
+      tell application "${appName}"
+        activate
+        do script POSIX file "${tempScript}" language javascript
+      end tell
+    `;
+    return await this.executeAppleScript(appleScript);
+  }
+
+  // Windows transport: drive InDesign through COM (VBScript bridge, cscript)
+  async runViaWindowsCOM(tempScript) {
+      const vbsPath = path.join(__dirname, 'temp_run.vbs');
+      const outPath = path.join(__dirname, 'temp_out.txt');
+      const progId = process.env.INDESIGN_PROGID || 'InDesign.Application';
+      const jsxWin = tempScript.replace(/\//g, '\\');
+      const outWin = outPath.replace(/\//g, '\\');
+      const vbs = [
+        'Option Explicit',
+        'On Error Resume Next',
+        'Dim inS, src, app, res, ids, i',
+        'Set inS = CreateObject("ADODB.Stream")',
+        'inS.Type = 2 : inS.Charset = "UTF-8" : inS.Open',
+        'inS.LoadFromFile "' + jsxWin + '"',
+        'src = inS.ReadText : inS.Close',
+        'ids = Array("' + progId + '", "InDesign.Application", "InDesign.Application.2026", "InDesign.Application.2025", "InDesign.Application.2024")',
+        'For i = 0 To UBound(ids)',
+        '  Err.Clear',
+        '  Set app = CreateObject(ids(i))',
+        '  If Err.Number = 0 Then Exit For',
+        'Next',
+        'If app Is Nothing Then WriteOut "ERROR: Could not connect to InDesign via COM. Is it installed and running?" : WScript.Quit 0',
+        'Err.Clear',
+        'res = app.DoScript(src, 1246973031)',   // 1246973031 = ScriptLanguage.JAVASCRIPT
+        'If Err.Number <> 0 Then WriteOut "ERROR: InDesign DoScript failed: " & Err.Description : WScript.Quit 0',
+        'WriteOut CStr(res)',
+        'Sub WriteOut(t)',
+        '  Dim o : Set o = CreateObject("ADODB.Stream")',
+        '  o.Type = 2 : o.Charset = "UTF-8" : o.Open',
+        '  o.WriteText t : o.SaveToFile "' + outWin + '", 2 : o.Close',
+        'End Sub'
+      ].join('\r\n');
+      fs.writeFileSync(vbsPath, vbs, 'utf8');
+      
+      execSync('cscript //nologo //B "' + vbsPath + '"', { encoding: 'utf8', timeout: 120000 });
+      let result = fs.existsSync(outPath) ? fs.readFileSync(outPath, 'utf8') : '';
+      result = result.replace(/^﻿/, ''); // strip UTF-8 BOM written by ADODB.Stream
+      try { if (fs.existsSync(vbsPath)) fs.unlinkSync(vbsPath); } catch (e) {}
+      try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch (e) {}
+      return result.trim();
   }
 
   formatResponse(result, operation = "Operation") {
@@ -680,7 +729,7 @@ class InDesignMCPServer {
         info += "Height: " + doc.documentPreferences.pageHeight + "\\n";
         info += "Facing Pages: " + doc.documentPreferences.facingPages + "\\n";
         info += "Modified: " + doc.modified + "\\n";
-        info += "File Path: " + (doc.fullName ? doc.fullName.fsName : "Unsaved") + "\\n";
+        info += "File Path: " + (doc.saved ? doc.fullName.fsName : "Unsaved") + "\\n";
         info += "\\n=== MARGINS ===\\n";
         info += "Top: " + doc.marginPreferences.top + "\\n";
         info += "Bottom: " + doc.marginPreferences.bottom + "\\n";
